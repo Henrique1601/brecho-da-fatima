@@ -17,7 +17,9 @@ import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
 import { Footer } from "@/components/Footer";
 import { INITIAL_PRODUCTS, STORE_DATA } from "@/data/storeData";
 import { Product } from "@/types";
-import { Sparkles, Search, SlidersHorizontal, Heart, ShieldAlert, Check } from "lucide-react";
+import { TestimonialsSection } from "@/components/TestimonialsSection";
+import { BackupModal } from "@/components/BackupModal";
+import { Sparkles, Search, SlidersHorizontal, Heart, ShieldAlert, Check, Mic, MicOff } from "lucide-react";
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
@@ -33,6 +35,9 @@ export default function Home() {
   // Controle de Administrador (PIN da Dona Fátima)
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
+  const [isListeningVoice, setIsListeningVoice] = useState(false);
+  const [maxPriceSlider, setMaxPriceSlider] = useState<number>(300);
   const [pinActionCallback, setPinActionCallback] = useState<(() => void) | null>(null);
 
   // Modais
@@ -159,6 +164,7 @@ export default function Home() {
         if (statusFilter === "available" && p.status !== "available") return false;
         if (statusFilter === "sold" && p.status !== "sold") return false;
         if (maxPrice !== null && p.price > maxPrice) return false;
+        if (maxPriceSlider < 300 && p.price > maxPriceSlider) return false;
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
           const matchTitle = p.title.toLowerCase().includes(q);
@@ -188,12 +194,49 @@ export default function Home() {
     setStatusFilter("all");
     setPriceSort("none");
     setMaxPrice(null);
+    setMaxPriceSlider(300);
     setSearchQuery("");
   };
 
   const scrollToProducts = () => {
     const el = document.getElementById("vitrine-produtos");
     if (el) el.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Busca por Voz nativa Web Speech API
+  const handleVoiceSearch = () => {
+    if (typeof window === "undefined") return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Seu navegador não suporta busca por voz. Experimente no Google Chrome.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "pt-BR";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      setIsListeningVoice(true);
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setSearchQuery(transcript);
+      setIsListeningVoice(false);
+      scrollToProducts();
+    };
+
+    recognition.onerror = () => {
+      setIsListeningVoice(false);
+    };
+
+    recognition.onend = () => {
+      setIsListeningVoice(false);
+    };
+
+    recognition.start();
   };
 
   return (
@@ -206,6 +249,7 @@ export default function Home() {
         favoritesCount={favorites.length}
         onOpenFavorites={() => setIsFavoritesModalOpen(true)}
         isAdminUnlocked={isAdminUnlocked}
+        onOpenBackup={() => setIsBackupModalOpen(true)}
         onToggleAdmin={() => {
           if (isAdminUnlocked) {
             setIsAdminUnlocked(false);
@@ -261,15 +305,27 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="relative flex-1 sm:w-72">
+            <div className="relative flex-1 sm:w-80">
               <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Buscar por peça, marca ou cor..."
+                placeholder={isListeningVoice ? "Ouvindo... Fale o nome da peça..." : "Buscar por peça, marca ou cor..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs sm:text-sm text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500 shadow-sm"
+                className={`w-full pl-9 pr-10 py-2.5 rounded-2xl bg-white dark:bg-zinc-900 border text-xs sm:text-sm text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500 shadow-sm transition-all ${
+                  isListeningVoice ? "border-rose-500 ring-2 ring-rose-300 dark:ring-rose-900 animate-pulse" : "border-zinc-200 dark:border-zinc-800"
+                }`}
               />
+              <button
+                type="button"
+                onClick={handleVoiceSearch}
+                className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-xl transition-colors ${
+                  isListeningVoice ? "text-rose-600 bg-rose-50 dark:bg-rose-950/60" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                }`}
+                title="Buscar falando no microfone"
+              >
+                <Mic className={`w-4 h-4 ${isListeningVoice ? "animate-bounce" : ""}`} />
+              </button>
             </div>
 
             <button
@@ -299,6 +355,8 @@ export default function Home() {
             onSelectStatus={setStatusFilter}
             priceSort={priceSort}
             onSelectPriceSort={setPriceSort}
+            maxPriceSlider={maxPriceSlider}
+            onChangeMaxPriceSlider={setMaxPriceSlider}
             onResetFilters={handleResetFilters}
             counts={counts}
           />
@@ -336,6 +394,9 @@ export default function Home() {
         </div>
 
       </main>
+
+      {/* Seção de Depoimentos de Clientes Reais de Santos */}
+      <TestimonialsSection />
 
       <FloatingWhatsApp />
       <Footer onOpenLocation={() => setIsLocationModalOpen(true)} />
@@ -378,6 +439,14 @@ export default function Home() {
         onRemoveFavorite={(id) => saveFavorites(favorites.filter((f) => f.id !== id))}
         onClearFavorites={() => saveFavorites([])}
         onSelectProduct={(p) => setDetailProduct(p)}
+      />
+
+      {/* Modal de Backup e Exportação */}
+      <BackupModal
+        isOpen={isBackupModalOpen}
+        onClose={() => setIsBackupModalOpen(false)}
+        products={products}
+        onRestoreProducts={(restored) => saveProducts(restored)}
       />
 
       <AdminPinModal

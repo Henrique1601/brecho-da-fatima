@@ -10,7 +10,9 @@ import {
   Menu, 
   X, 
   ShoppingBag,
-  Heart
+  Heart,
+  ShieldCheck,
+  DownloadCloud
 } from "lucide-react";
 import { InstagramIcon as Instagram } from "@/components/icons/InstagramIcon";
 import { STORE_DATA } from "@/data/storeData";
@@ -23,6 +25,7 @@ interface NavbarProps {
   onOpenFavorites: () => void;
   isAdminUnlocked: boolean;
   onToggleAdmin: () => void;
+  onOpenBackup: () => void;
 }
 
 export function Navbar({ 
@@ -31,7 +34,8 @@ export function Navbar({
   favoritesCount,
   onOpenFavorites,
   isAdminUnlocked,
-  onToggleAdmin
+  onToggleAdmin,
+  onOpenBackup
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -94,6 +98,18 @@ export function Navbar({
               )}
             </button>
 
+            {/* Botão de Backup do Catálogo para Administrador */}
+            {isAdminUnlocked && (
+              <button
+                onClick={onOpenBackup}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 rounded-full border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors"
+                title="Backup e Excel do Catálogo"
+              >
+                <DownloadCloud className="w-3.5 h-3.5" />
+                <span>Backup</span>
+              </button>
+            )}
+
             <button
               onClick={onOpenAddModal}
               className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full shadow-md active:scale-95 transition-all ${
@@ -132,6 +148,18 @@ export function Navbar({
                 </span>
               )}
             </button>
+            {/* Botão de Backup do Catálogo para Administrador */}
+            {isAdminUnlocked && (
+              <button
+                onClick={onOpenBackup}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 rounded-full border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors"
+                title="Backup e Excel do Catálogo"
+              >
+                <DownloadCloud className="w-3.5 h-3.5" />
+                <span>Backup</span>
+              </button>
+            )}
+
             <button
               onClick={onOpenAddModal}
               className="p-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-full"

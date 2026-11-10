@@ -23,6 +23,8 @@ interface SidebarFilterProps {
   onSelectStatus: (status: 'all' | 'available' | 'sold') => void;
   priceSort: 'none' | 'asc' | 'desc';
   onSelectPriceSort: (sort: 'none' | 'asc' | 'desc') => void;
+  maxPriceSlider: number;
+  onChangeMaxPriceSlider: (price: number) => void;
   onResetFilters: () => void;
   counts: {
     total: number;
@@ -54,6 +56,8 @@ export function SidebarFilter({
   onSelectStatus,
   priceSort,
   onSelectPriceSort,
+  maxPriceSlider,
+  onChangeMaxPriceSlider,
   onResetFilters,
   counts
 }: SidebarFilterProps) {
@@ -191,6 +195,32 @@ export function SidebarFilter({
                     </button>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* Filtro por Faixa de Preço Deslizante (Slider) */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                  Preço Máximo
+                </label>
+                <span className="text-xs font-extrabold text-rose-600 dark:text-rose-400">
+                  {maxPriceSlider >= 300 ? "Todos os preços" : `Até R$ ${maxPriceSlider}`}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="30"
+                max="300"
+                step="10"
+                value={maxPriceSlider}
+                onChange={(e) => onChangeMaxPriceSlider(Number(e.target.value))}
+                className="w-full accent-rose-600 cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] text-zinc-400 mt-1">
+                <span>R$ 30</span>
+                <span>R$ 150</span>
+                <span>R$ 300+</span>
               </div>
             </div>
 

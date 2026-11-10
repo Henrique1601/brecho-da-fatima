@@ -116,8 +116,8 @@ export function Footer({ onOpenLocation }: FooterProps) {
 
         {/* Rodapé Final */}
         <div className="mt-12 pt-6 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
-          <p className="flex items-center gap-1">
-            Feito com <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" /> para o Brechó da Fátima • Praia Grande / SP
+          <p>
+            © Brechó da Fátima • Todos os direitos reservados.
           </p>
           <button
             onClick={scrollToTop}

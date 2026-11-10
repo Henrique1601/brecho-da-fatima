@@ -18,8 +18,8 @@ export async function POST(req: NextRequest) {
 
 📲 Peça única disponível! Para reservar ou retirar na loja física, envie mensagem no nosso WhatsApp (13) 97404-7020 ou clique no link da bio!
 
-📍 Brechó da Fátima - Praia Grande / SP
-#brechodafatima #brecho #modasustentavel #praiagrande #garimpo #lookdodia #achadinhos`;
+📍 Brechó da Fátima - Santos / SP (Rua Antonio Bento, 76 - Vila Mathias)
+#brechodafatima #brecho #modasustentavel #santos #garimpo #lookdodia #achadinhos`;
 
     // Se o usuário configurar o token de API do Buffer nas variáveis ou no modal
     const token = bufferToken || process.env.BUFFER_ACCESS_TOKEN;

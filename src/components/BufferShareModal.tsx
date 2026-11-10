@@ -40,10 +40,10 @@ ${product.description}
 
 📲 Peça única exclusiva! Para reservar antes que acabe, mande um WhatsApp para a Dona Fátima no (13) 97404-7020 ou clique no link da bio!
 
-📍 Brechó da Fátima - Praia Grande / SP
+📍 Brechó da Fátima - Rua Antonio Bento, 76 (Fundos) - Vila Mathias, Santos / SP
 ${STORE_DATA.instagram}
 
-#brechodafatima #modasustentavel #brechosp #praiagrande #garimpando #vintagebrasil #slowfashion #lookdodia #achados`;
+#brechodafatima #modasustentavel #brechosp #santos #garimpando #vintagebrasil #slowfashion #lookdodia #achados`;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(caption);

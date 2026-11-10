@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Brechó da Fátima | Marketplace & Curadoria Vintage",
-  description: "Marketplace moderno de moda sustentável, roupas femininas, masculinas, vintage e calçados exclusivos em Praia Grande - SP. Reserve direto pelo WhatsApp!",
+  description: "Marketplace moderno de moda sustentável, roupas femininas, masculinas, vintage e calçados exclusivos em Santos - SP. Reserve direto pelo WhatsApp!",
   openGraph: {
     title: "Brechó da Fátima | Garimpos e Moda Circular",
     description: "Peças selecionadas a dedo por Dona Fátima. Marque sua peça favorita e chame direto no WhatsApp (13) 97404-7020.",

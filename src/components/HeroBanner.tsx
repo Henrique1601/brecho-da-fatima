@@ -10,7 +10,7 @@ const SLIDES = [
   {
     badge: "Curadoria Exclusiva • Dona Fátima",
     title: "Moda com Alma, Estilo & Sustentabilidade",
-    subtitle: "Peças vintage selecionadas a dedo em Praia Grande/SP. Garimpe roupas únicas com qualidade de loja grande e preços de brechó.",
+    subtitle: "Peças vintage selecionadas a dedo em Santos/SP. Garimpe roupas únicas com qualidade de loja grande e preços de brechó.",
     cta: "Explorar Garimpo",
     tagline: "Sem intermediários • Fale direto no Zap",
     image: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=1600&q=80",

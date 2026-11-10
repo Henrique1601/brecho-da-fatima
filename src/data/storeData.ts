@@ -8,14 +8,14 @@ export const STORE_DATA: StoreInfo = {
   instagram: "https://www.instagram.com/brechodafatimaa?obrf=aHg0d2J1NHlucHhv",
   instagramHandle: "@brechodafatimaa",
   address: {
-    street: "Av. Pres. Kennedy, 5200 (Região de Praia Grande)",
-    neighborhood: "Ocian / Vila Mirim",
-    city: "Praia Grande",
+    street: "Rua Antonio Bento, 76",
+    neighborhood: "Vila Mathias",
+    city: "Santos",
     state: "SP",
-    cep: "11704-000",
-    reference: "Próximo à orla e comércios locais",
-    googleMapsEmbedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3644.839626490333!2d-46.4678857!3d-24.0016482!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce1c456885df05%3A0x6e2467362df586d5!2sPraia%20Grande%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1700000000000",
-    googleMapsLink: "https://maps.google.com/?q=Praia+Grande+SP"
+    cep: "11075-260",
+    reference: "Entrada pelos fundos",
+    googleMapsEmbedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3646.230777598822!2d-46.3312984!3d-23.9522961!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce03126f9479b1%3A0xc3cf2a04870102b3!2sR.%20Ant%C3%B4nio%20Bento%2C%2076%20-%20Vila%20Matias%2C%20Santos%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1700000000000",
+    googleMapsLink: "https://maps.google.com/?q=Rua+Antonio+Bento+76+Vila+Mathias+Santos+SP"
   },
   openingHours: {
     weekdays: "Segunda a Sexta: 09h às 18h",

@@ -94,8 +94,8 @@ export function LocationModal({ isOpen, onClose }: LocationModalProps) {
               <p className="text-xs text-zinc-500">
                 {STORE_DATA.address.neighborhood} • {STORE_DATA.address.city} - {STORE_DATA.address.state}
               </p>
-              <p className="text-xs text-zinc-400">
-                Ref: {STORE_DATA.address.reference}
+              <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+                ⭐ {STORE_DATA.address.reference}
               </p>
             </div>
 
@@ -115,6 +115,41 @@ export function LocationModal({ isOpen, onClose }: LocationModalProps) {
               </p>
             </div>
 
+          </div>
+
+          {/* Atalhos de Navegação Direta: Google Maps, Waze e Uber */}
+          <div>
+            <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-2">
+              Rotas Rápidas no Seu Aplicativo Preferido:
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              <a
+                href={STORE_DATA.address.googleMapsLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 text-xs font-bold text-zinc-800 dark:text-zinc-200 transition-colors"
+              >
+                <Navigation className="w-3.5 h-3.5 text-blue-500" />
+                <span>Google Maps</span>
+              </a>
+              <a
+                href="https://waze.com/ul?q=Rua+Antonio+Bento+76+Vila+Mathias+Santos"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 text-xs font-bold text-zinc-800 dark:text-zinc-200 transition-colors"
+              >
+                <Navigation className="w-3.5 h-3.5 text-cyan-500" />
+                <span>Waze</span>
+              </a>
+              <a
+                href="https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[formatted_address]=Rua%20Antonio%20Bento%2C%2076%20-%20Vila%20Mathias%2C%20Santos"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 hover:opacity-90 text-xs font-bold transition-opacity"
+              >
+                <span>Pedir Uber</span>
+              </a>
+            </div>
           </div>
 
           {/* Botões de Contato Rápido */}

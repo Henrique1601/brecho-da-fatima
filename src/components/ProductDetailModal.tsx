@@ -25,6 +25,8 @@ interface ProductDetailModalProps {
   onClose: () => void;
   onToggleSold: (id: string) => void;
   onOpenBuffer: (product: Product) => void;
+  isFavorite: boolean;
+  onToggleFavorite: (product: Product) => void;
 }
 
 export function ProductDetailModal({
@@ -32,7 +34,9 @@ export function ProductDetailModal({
   isOpen,
   onClose,
   onToggleSold,
-  onOpenBuffer
+  onOpenBuffer,
+  isFavorite,
+  onToggleFavorite
 }: ProductDetailModalProps) {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
 
@@ -48,13 +52,26 @@ export function ProductDetailModal({
         exit={{ opacity: 0, scale: 0.96, y: 15 }}
         className="relative w-full max-w-4xl bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden my-auto"
       >
-        {/* Botão Fechar */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-20 p-2.5 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-md transition-all"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {/* Botões do Topo: Favoritar e Fechar */}
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+          <button
+            onClick={() => onToggleFavorite(product)}
+            className={`p-2.5 rounded-full backdrop-blur-md transition-all shadow-md ${
+              isFavorite
+                ? "bg-rose-600 text-white scale-105"
+                : "bg-black/50 hover:bg-black/80 text-white"
+            }`}
+            title={isFavorite ? "Remover dos favoritos" : "Salvar nos favoritos"}
+          >
+            <Heart className={`w-5 h-5 ${isFavorite ? "fill-white" : ""}`} />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-2.5 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-md transition-all"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2">
           
@@ -161,6 +178,26 @@ export function ProductDetailModal({
                 <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-line">
                   {product.description}
                 </p>
+              </div>
+
+              {/* Tabela de Medidas e Dúvidas com Dona Fátima */}
+              <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                <div>
+                  <span className="font-bold text-amber-900 dark:text-amber-300 block">
+                    📏 Dúvida com o caimento ou medidas exatas?
+                  </span>
+                  <span className="text-amber-800/80 dark:text-amber-400">
+                    A Dona Fátima mede com fita métrica agora mesmo pra você!
+                  </span>
+                </div>
+                <a
+                  href={createWhatsAppLink(STORE_DATA.whatsapp, `Gostaria de ver as medidas em centímetros da peça: ${product.title}`)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold whitespace-nowrap shadow-sm"
+                >
+                  Pedir Medidas no Zap
+                </a>
               </div>
 
               {/* Selo de Garantia do Brechó */}

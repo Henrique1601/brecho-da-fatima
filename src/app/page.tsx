@@ -1,59 +1,113 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
+import confetti from "canvas-confetti";
 import { Navbar } from "@/components/Navbar";
 import { HeroBanner } from "@/components/HeroBanner";
+import { StoriesBar } from "@/components/StoriesBar";
 import { ProductCard } from "@/components/ProductCard";
 import { SidebarFilter } from "@/components/SidebarFilter";
 import { AddProductModal } from "@/components/AddProductModal";
 import { BufferShareModal } from "@/components/BufferShareModal";
 import { ProductDetailModal } from "@/components/ProductDetailModal";
 import { LocationModal } from "@/components/LocationModal";
+import { FavoritesModal } from "@/components/FavoritesModal";
+import { AdminPinModal } from "@/components/AdminPinModal";
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
 import { Footer } from "@/components/Footer";
 import { INITIAL_PRODUCTS, STORE_DATA } from "@/data/storeData";
 import { Product } from "@/types";
-import { Sparkles, Search, SlidersHorizontal, RefreshCw } from "lucide-react";
+import { Sparkles, Search, SlidersHorizontal, Heart, ShieldAlert, Check } from "lucide-react";
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [favorites, setFavorites] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'sold'>("all");
   const [priceSort, setPriceSort] = useState<'none' | 'asc' | 'desc'>("none");
+  const [maxPrice, setMaxPrice] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Controle de Administrador (PIN da Dona Fátima)
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [pinActionCallback, setPinActionCallback] = useState<(() => void) | null>(null);
 
   // Modais
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [isFavoritesModalOpen, setIsFavoritesModalOpen] = useState(false);
   const [bufferProduct, setBufferProduct] = useState<Product | null>(null);
   const [detailProduct, setDetailProduct] = useState<Product | null>(null);
 
-  // Carregar do localStorage se existir salvamento prévio
+  // Carregar do localStorage
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("brecho_fatima_products");
-      if (saved) {
-        setProducts(JSON.parse(saved));
-      }
+      const savedProds = localStorage.getItem("brecho_fatima_products");
+      if (savedProds) setProducts(JSON.parse(savedProds));
+
+      const savedFavs = localStorage.getItem("brecho_fatima_favorites");
+      if (savedFavs) setFavorites(JSON.parse(savedFavs));
+
+      const savedAdmin = localStorage.getItem("brecho_fatima_admin");
+      if (savedAdmin === "true") setIsAdminUnlocked(true);
     } catch (e) {
-      console.error("Erro ao ler localStorage", e);
+      console.error("Erro ao carregar dados locais", e);
     }
   }, []);
 
-  // Salvar no localStorage a cada alteração
   const saveProducts = (newProds: Product[]) => {
     setProducts(newProds);
     try {
       localStorage.setItem("brecho_fatima_products", JSON.stringify(newProds));
     } catch (e) {
-      console.error("Erro ao salvar localStorage", e);
+      console.error(e);
     }
   };
 
-  // Alternar produto vendido/disponível
+  const saveFavorites = (newFavs: Product[]) => {
+    setFavorites(newFavs);
+    try {
+      localStorage.setItem("brecho_fatima_favorites", JSON.stringify(newFavs));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Favoritar / Desfavoritar
+  const handleToggleFavorite = (product: Product) => {
+    const exists = favorites.some((f) => f.id === product.id);
+    let updated: Product[];
+    if (exists) {
+      updated = favorites.filter((f) => f.id !== product.id);
+    } else {
+      updated = [...favorites, product];
+      // Efeito de confete ao favoritar
+      try {
+        confetti({
+          particleCount: 40,
+          spread: 60,
+          origin: { y: 0.8 },
+          colors: ['#f43f5e', '#fb7185', '#fda4af']
+        });
+      } catch (e) {}
+    }
+    saveFavorites(updated);
+  };
+
+  // Alternar produto vendido/disponível com verificação de PIN
   const handleToggleSold = (id: string) => {
+    if (!isAdminUnlocked) {
+      setPinActionCallback(() => () => executeToggleSold(id));
+      setIsPinModalOpen(true);
+      return;
+    }
+    executeToggleSold(id);
+  };
+
+  const executeToggleSold = (id: string) => {
     const updated = products.map((p) => {
       if (p.id === id) {
         return {
@@ -65,7 +119,6 @@ export default function Home() {
     });
     saveProducts(updated);
 
-    // Se estiver no modal detalhado, atualiza também
     if (detailProduct && detailProduct.id === id) {
       setDetailProduct((prev) => prev ? {
         ...prev,
@@ -74,24 +127,38 @@ export default function Home() {
     }
   };
 
+  // Abertura do Modal de Adicionar Peça com checagem de PIN
+  const handleOpenAddModal = () => {
+    if (!isAdminUnlocked) {
+      setPinActionCallback(() => () => setIsAddModalOpen(true));
+      setIsPinModalOpen(true);
+    } else {
+      setIsAddModalOpen(true);
+    }
+  };
+
   // Adicionar novo produto
   const handleAddProduct = (newProduct: Product) => {
     const updated = [newProduct, ...products];
     saveProducts(updated);
+    try {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    } catch (e) {}
   };
 
-  // Filtros combinados e ordenação
+  // Filtros combinados
   const filteredProducts = useMemo(() => {
     return products
       .filter((p) => {
-        // Categoria
         if (selectedCategory !== "all" && p.category !== selectedCategory) return false;
-        // Tamanho
         if (selectedSize && p.size.toLowerCase() !== selectedSize.toLowerCase()) return false;
-        // Status
         if (statusFilter === "available" && p.status !== "available") return false;
         if (statusFilter === "sold" && p.status !== "sold") return false;
-        // Busca textual
+        if (maxPrice !== null && p.price > maxPrice) return false;
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
           const matchTitle = p.title.toLowerCase().includes(q);
@@ -106,7 +173,7 @@ export default function Home() {
         if (priceSort === "desc") return b.price - a.price;
         return 0;
       });
-  }, [products, selectedCategory, selectedSize, statusFilter, priceSort, searchQuery]);
+  }, [products, selectedCategory, selectedSize, statusFilter, priceSort, maxPrice, searchQuery]);
 
   const counts = useMemo(() => {
     const total = products.length;
@@ -120,6 +187,7 @@ export default function Home() {
     setSelectedSize("");
     setStatusFilter("all");
     setPriceSort("none");
+    setMaxPrice(null);
     setSearchQuery("");
   };
 
@@ -133,9 +201,19 @@ export default function Home() {
       
       {/* Barra de Navegação Superior */}
       <Navbar
-        onOpenAddModal={() => setIsAddModalOpen(true)}
+        onOpenAddModal={handleOpenAddModal}
         onOpenLocation={() => setIsLocationModalOpen(true)}
-        favoritesCount={0}
+        favoritesCount={favorites.length}
+        onOpenFavorites={() => setIsFavoritesModalOpen(true)}
+        isAdminUnlocked={isAdminUnlocked}
+        onToggleAdmin={() => {
+          if (isAdminUnlocked) {
+            setIsAdminUnlocked(false);
+            localStorage.removeItem("brecho_fatima_admin");
+          } else {
+            setIsPinModalOpen(true);
+          }
+        }}
       />
 
       {/* Hero Carrossel Cinemático */}
@@ -144,10 +222,26 @@ export default function Home() {
         onOpenLocation={() => setIsLocationModalOpen(true)}
       />
 
-      {/* Seção Principal de Marketplace & Catálogo */}
-      <main id="vitrine-produtos" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-14">
+      {/* Barra de Stories Circulares Modernos */}
+      <StoriesBar
+        onSelectCategory={(cat) => {
+          setSelectedCategory(cat);
+          setMaxPrice(null);
+          scrollToProducts();
+        }}
+        onFilterUnder50={() => {
+          setMaxPrice(50);
+          scrollToProducts();
+        }}
+        onOpenLocation={() => setIsLocationModalOpen(true)}
+        onOpenFavorites={() => setIsFavoritesModalOpen(true)}
+        favoritesCount={favorites.length}
+      />
+
+      {/* Seção Principal de Marketplace */}
+      <main id="vitrine-produtos" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12">
         
-        {/* Barra de Busca & Controles Rápidos */}
+        {/* Barra de Busca & Controles */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-8">
           <div>
             <h2 className="font-serif text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white flex items-center gap-2.5">
@@ -155,9 +249,14 @@ export default function Home() {
               <span className="text-xs font-bold px-3 py-1 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400">
                 {filteredProducts.length} peças
               </span>
+              {maxPrice && (
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                  Filtro: Até R$ {maxPrice}
+                </span>
+              )}
             </h2>
             <p className="text-xs sm:text-sm text-zinc-500 mt-1">
-              Catálogo em tempo real • Sem intermediários de pagamento • Negocie e reserve direto pelo WhatsApp
+              Catálogo em tempo real • Santos/SP • Negocie direto pelo WhatsApp da Dona Fátima
             </p>
           </div>
 
@@ -183,15 +282,17 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Layout com Sidebar Recolhível + Grid de Produtos Tipo Nike/Adidas */}
+        {/* Layout com Sidebar + Grid de Produtos */}
         <div className="flex flex-col lg:flex-row items-start gap-8">
           
-          {/* Sidebar Lateral com Filtros & Tamanhos */}
           <SidebarFilter
             isOpen={sidebarOpen}
             onToggle={() => setSidebarOpen(!sidebarOpen)}
             selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
+            onSelectCategory={(cat) => {
+              setSelectedCategory(cat);
+              setMaxPrice(null);
+            }}
             selectedSize={selectedSize}
             onSelectSize={setSelectedSize}
             statusFilter={statusFilter}
@@ -202,15 +303,11 @@ export default function Home() {
             counts={counts}
           />
 
-          {/* Grid de Cards de Produtos */}
           <div className="flex-1 w-full">
             {filteredProducts.length === 0 ? (
               <div className="py-20 text-center rounded-3xl bg-white dark:bg-zinc-900 border border-dashed border-zinc-300 dark:border-zinc-800 p-8">
                 <p className="text-base font-semibold text-zinc-700 dark:text-zinc-300">
                   Nenhuma peça encontrada com estes filtros.
-                </p>
-                <p className="text-xs text-zinc-400 mt-1">
-                  Tente limpar a pesquisa ou selecionar outra categoria.
                 </p>
                 <button
                   onClick={handleResetFilters}
@@ -228,6 +325,8 @@ export default function Home() {
                     onToggleSold={handleToggleSold}
                     onOpenBufferShare={(p) => setBufferProduct(p)}
                     onSelectProduct={(p) => setDetailProduct(p)}
+                    isFavorite={favorites.some((f) => f.id === product.id)}
+                    onToggleFavorite={handleToggleFavorite}
                   />
                 ))}
               </div>
@@ -238,27 +337,22 @@ export default function Home() {
 
       </main>
 
-      {/* Botão Flutuante do WhatsApp */}
       <FloatingWhatsApp />
-
-      {/* Rodapé Moderno */}
       <Footer onOpenLocation={() => setIsLocationModalOpen(true)} />
 
-      {/* Modal: Cadastro com Drag & Drop e IA */}
+      {/* Modais */}
       <AddProductModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAddProduct={handleAddProduct}
       />
 
-      {/* Modal: Publicar no Instagram via Buffer */}
       <BufferShareModal
         product={bufferProduct}
         isOpen={!!bufferProduct}
         onClose={() => setBufferProduct(null)}
       />
 
-      {/* Modal: Detalhes Rápidos da Peça */}
       <ProductDetailModal
         product={detailProduct}
         isOpen={!!detailProduct}
@@ -268,12 +362,37 @@ export default function Home() {
           setDetailProduct(null);
           setBufferProduct(p);
         }}
+        isFavorite={detailProduct ? favorites.some((f) => f.id === detailProduct.id) : false}
+        onToggleFavorite={handleToggleFavorite}
       />
 
-      {/* Modal: Localização e Rotas da Loja */}
       <LocationModal
         isOpen={isLocationModalOpen}
         onClose={() => setIsLocationModalOpen(false)}
+      />
+
+      <FavoritesModal
+        isOpen={isFavoritesModalOpen}
+        onClose={() => setIsFavoritesModalOpen(false)}
+        favorites={favorites}
+        onRemoveFavorite={(id) => saveFavorites(favorites.filter((f) => f.id !== id))}
+        onClearFavorites={() => saveFavorites([])}
+        onSelectProduct={(p) => setDetailProduct(p)}
+      />
+
+      <AdminPinModal
+        isOpen={isPinModalOpen}
+        onClose={() => setIsPinModalOpen(false)}
+        onSuccess={() => {
+          setIsAdminUnlocked(true);
+          try {
+            localStorage.setItem("brecho_fatima_admin", "true");
+          } catch (e) {}
+          if (pinActionCallback) {
+            pinActionCallback();
+            setPinActionCallback(null);
+          }
+        }}
       />
 
     </div>

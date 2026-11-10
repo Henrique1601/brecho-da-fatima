@@ -20,9 +20,19 @@ interface NavbarProps {
   onOpenAddModal: () => void;
   onOpenLocation: () => void;
   favoritesCount: number;
+  onOpenFavorites: () => void;
+  isAdminUnlocked: boolean;
+  onToggleAdmin: () => void;
 }
 
-export function Navbar({ onOpenAddModal, onOpenLocation, favoritesCount }: NavbarProps) {
+export function Navbar({ 
+  onOpenAddModal, 
+  onOpenLocation, 
+  favoritesCount,
+  onOpenFavorites,
+  isAdminUnlocked,
+  onToggleAdmin
+}: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -69,12 +79,32 @@ export function Navbar({ onOpenAddModal, onOpenLocation, favoritesCount }: Navba
               <span>{STORE_DATA.instagramHandle}</span>
             </a>
 
+            {/* Sacola de Favoritos */}
+            <button
+              onClick={onOpenFavorites}
+              className="relative inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:text-rose-600 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
+              title="Ver favoritos"
+            >
+              <Heart className={`w-4 h-4 ${favoritesCount > 0 ? "fill-rose-500 text-rose-500" : ""}`} />
+              <span>Favoritos</span>
+              {favoritesCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-xs font-black bg-rose-600 text-white">
+                  {favoritesCount}
+                </span>
+              )}
+            </button>
+
             <button
               onClick={onOpenAddModal}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 rounded-full shadow-md shadow-rose-500/20 active:scale-95 transition-all"
+              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full shadow-md active:scale-95 transition-all ${
+                isAdminUnlocked
+                  ? "text-white bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 shadow-rose-500/20"
+                  : "text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200"
+              }`}
+              title={isAdminUnlocked ? "Painel Aberto" : "Requer PIN da Dona Fátima"}
             >
-              <PlusCircle className="w-4 h-4" />
-              <span>Nova Peça (IA)</span>
+              <PlusCircle className="w-4 h-4 text-rose-500" />
+              <span>{isAdminUnlocked ? "Nova Peça (IA)" : "Painel da Fátima"}</span>
             </button>
 
             <a
@@ -90,6 +120,18 @@ export function Navbar({ onOpenAddModal, onOpenLocation, favoritesCount }: Navba
 
           {/* Mobile hamburger */}
           <div className="flex md:hidden items-center gap-2">
+            <button
+              onClick={onOpenFavorites}
+              className="relative p-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-full"
+              title="Favoritos"
+            >
+              <Heart className={`w-5 h-5 ${favoritesCount > 0 ? "fill-rose-500" : ""}`} />
+              {favoritesCount > 0 && (
+                <span className="absolute top-1 right-1 px-1 rounded-full text-[10px] font-black bg-rose-600 text-white">
+                  {favoritesCount}
+                </span>
+              )}
+            </button>
             <button
               onClick={onOpenAddModal}
               className="p-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-full"
@@ -112,6 +154,24 @@ export function Navbar({ onOpenAddModal, onOpenLocation, favoritesCount }: Navba
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 px-4 pt-3 pb-5 space-y-3 shadow-xl">
+          <button
+            onClick={() => {
+              onOpenFavorites();
+              setMobileMenuOpen(false);
+            }}
+            className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-zinc-800 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+          >
+            <div className="flex items-center gap-3">
+              <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
+              <span>Sacola de Favoritos</span>
+            </div>
+            {favoritesCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-600 text-white">
+                {favoritesCount}
+              </span>
+            )}
+          </button>
+
           <button
             onClick={() => {
               onOpenLocation();

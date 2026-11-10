@@ -22,13 +22,17 @@ interface ProductCardProps {
   onToggleSold: (id: string) => void;
   onOpenBufferShare: (product: Product) => void;
   onSelectProduct: (product: Product) => void;
+  isFavorite: boolean;
+  onToggleFavorite: (product: Product) => void;
 }
 
 export function ProductCard({
   product,
   onToggleSold,
   onOpenBufferShare,
-  onSelectProduct
+  onSelectProduct,
+  isFavorite,
+  onToggleFavorite
 }: ProductCardProps) {
   const isSold = product.status === "sold";
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
@@ -86,8 +90,22 @@ export function ProductCard({
           )}
         </div>
 
-        {/* Badge de Tamanho */}
-        <div className="absolute top-3 right-3 z-10">
+        {/* Badge de Tamanho & Botão de Favoritar */}
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite(product);
+            }}
+            className={`p-2 rounded-full backdrop-blur-md transition-all shadow-md ${
+              isFavorite
+                ? "bg-rose-600 text-white scale-110"
+                : "bg-white/80 dark:bg-zinc-900/80 text-zinc-700 dark:text-zinc-200 hover:text-rose-500 hover:scale-105"
+            }`}
+            title={isFavorite ? "Remover dos favoritos" : "Salvar nos favoritos"}
+          >
+            <Heart className={`w-4 h-4 ${isFavorite ? "fill-white" : ""}`} />
+          </button>
           <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md text-zinc-900 dark:text-zinc-100 border border-black/10 shadow-sm">
             Tam: {product.size}
           </span>

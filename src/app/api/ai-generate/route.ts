@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { generateLookSuggestions } from "@/lib/lookSuggestions";
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,11 +39,14 @@ ${brand ? `🏷️ Marca: ${brand}\n` : ''}${color ? `🎨 Tom/Cor: ${color}\n` 
       ...(tags || []).map((t: string) => `#${t.replace(/\s+/g, '')}`)
     ].slice(0, 10).join(" ");
 
+    const lookSuggestions = generateLookSuggestions({ title, category, color, brand });
+
     return NextResponse.json({
       success: true,
       description: aiDescription,
       suggestedTags: ["garimpododia", "achados", "pecaunica", "vintagebrasil"],
-      captionForInstagram: `${aiDescription}\n\n${hashtags}`
+      captionForInstagram: `${aiDescription}\n\n${hashtags}`,
+      lookSuggestions
     });
   } catch (error) {
     return NextResponse.json(

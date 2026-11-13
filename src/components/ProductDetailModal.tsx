@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { 
   X, 
@@ -13,11 +13,15 @@ import {
   Tag, 
   Heart,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  QrCode,
+  Loader2
 } from "lucide-react";
 import { Product } from "@/types";
 import { STORE_DATA } from "@/data/storeData";
 import { formatBRL, createWhatsAppLink } from "@/lib/utils";
+import { generateLookSuggestions } from "@/lib/lookSuggestions";
+import { QrTagModal } from "./QrTagModal";
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -39,10 +43,65 @@ export function ProductDetailModal({
   onToggleFavorite
 }: ProductDetailModalProps) {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
+  const [isQrOpen, setIsQrOpen] = useState(false);
+  const [looksOpen, setLooksOpen] = useState(false);
+  const [lookSuggestions, setLookSuggestions] = useState<string[]>([]);
+  const [isLoadingLooks, setIsLoadingLooks] = useState(false);
+
+  useEffect(() => {
+    setActiveImgIndex(0);
+    setIsQrOpen(false);
+    setLooksOpen(false);
+    setLookSuggestions([]);
+    setIsLoadingLooks(false);
+  }, [product?.id, isOpen]);
 
   if (!isOpen || !product) return null;
 
   const isSold = product.status === "sold";
+
+  const handleToggleLooks = async () => {
+    const nextOpen = !looksOpen;
+    setLooksOpen(nextOpen);
+
+    if (!nextOpen || lookSuggestions.length > 0) return;
+
+    // Instant local fallback so the customer sees pairing ideas immediately
+    const fallback = generateLookSuggestions({
+      title: product.title,
+      category: product.category,
+      color: product.color,
+      brand: product.brand
+    });
+    setLookSuggestions(fallback);
+    setIsLoadingLooks(true);
+
+    try {
+      const res = await fetch("/api/ai-generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: product.title,
+          price: product.price,
+          category: product.category,
+          condition: product.condition,
+          brand: product.brand,
+          color: product.color,
+          tags: product.tags
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.lookSuggestions) && data.lookSuggestions.length > 0) {
+          setLookSuggestions(data.lookSuggestions);
+        }
+      }
+    } catch {
+      // Keep instant local fallback on network/API failure
+    } finally {
+      setIsLoadingLooks(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-md overflow-y-auto">
@@ -180,6 +239,46 @@ export function ProductDetailModal({
                 </p>
               </div>
 
+              {/* Sugestão de Look (IA) */}
+              <div className="rounded-2xl border border-rose-200/80 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/20 p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                    <span className="text-xs font-bold text-rose-900 dark:text-rose-200">
+                      Sugestão de Look (IA)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleToggleLooks}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-sm transition-colors"
+                  >
+                    {isLoadingLooks ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5" />
+                    )}
+                    <span>{looksOpen ? "Ocultar Looks" : "Como Combinar"}</span>
+                  </button>
+                </div>
+
+                {looksOpen && lookSuggestions.length > 0 && (
+                  <ul className="space-y-1.5 pt-1 text-xs text-zinc-700 dark:text-zinc-300">
+                    {lookSuggestions.map((suggestion, idx) => (
+                      <li
+                        key={idx}
+                        className="flex items-start gap-2 rounded-xl bg-white/80 dark:bg-zinc-900/60 px-3 py-2 border border-rose-100 dark:border-rose-900/40"
+                      >
+                        <span className="font-bold text-rose-600 dark:text-rose-400 shrink-0">
+                          {idx + 1}.
+                        </span>
+                        <span className="leading-relaxed">{suggestion}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
               {/* Tabela de Medidas e Dúvidas com Dona Fátima */}
               <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                 <div>
@@ -225,14 +324,24 @@ export function ProductDetailModal({
                 </div>
               )}
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
+                  type="button"
                   onClick={() => onToggleSold(product.id)}
-                  className="flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  className="flex-1 min-w-[140px] py-2.5 px-4 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                 >
                   {isSold ? "Marcar como Disponível" : "Marcar como Vendida"}
                 </button>
                 <button
+                  type="button"
+                  onClick={() => setIsQrOpen(true)}
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <QrCode className="w-4 h-4 text-rose-600" />
+                  <span>Etiqueta QR</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => onOpenBuffer(product)}
                   className="flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 border border-rose-200 dark:border-rose-900 hover:bg-rose-100 transition-colors"
                 >
@@ -246,6 +355,12 @@ export function ProductDetailModal({
 
         </div>
       </motion.div>
+
+      <QrTagModal
+        product={product}
+        isOpen={isQrOpen}
+        onClose={() => setIsQrOpen(false)}
+      />
     </div>
   );
 }

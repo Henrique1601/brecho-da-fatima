@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { 
   X, 
@@ -33,30 +33,31 @@ interface ProductDetailModalProps {
   onToggleFavorite: (product: Product) => void;
 }
 
-export function ProductDetailModal({
+export function ProductDetailModal(props: ProductDetailModalProps) {
+  if (!props.isOpen || !props.product) return null;
+
+  return (
+    <ProductDetailModalContent
+      key={props.product.id}
+      {...props}
+      product={props.product}
+    />
+  );
+}
+
+function ProductDetailModalContent({
   product,
-  isOpen,
   onClose,
   onToggleSold,
   onOpenBuffer,
   isFavorite,
   onToggleFavorite
-}: ProductDetailModalProps) {
+}: Omit<ProductDetailModalProps, "product" | "isOpen"> & { product: Product }) {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [isQrOpen, setIsQrOpen] = useState(false);
   const [looksOpen, setLooksOpen] = useState(false);
   const [lookSuggestions, setLookSuggestions] = useState<string[]>([]);
   const [isLoadingLooks, setIsLoadingLooks] = useState(false);
-
-  useEffect(() => {
-    setActiveImgIndex(0);
-    setIsQrOpen(false);
-    setLooksOpen(false);
-    setLookSuggestions([]);
-    setIsLoadingLooks(false);
-  }, [product?.id, isOpen]);
-
-  if (!isOpen || !product) return null;
 
   const isSold = product.status === "sold";
 

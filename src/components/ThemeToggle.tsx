@@ -1,35 +1,45 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useSyncExternalStore } from "react";
 import { Moon, Sun } from "lucide-react";
 
 interface ThemeToggleProps {
   className?: string;
 }
 
+function subscribe(onStoreChange: () => void): () => void {
+  const root = document.documentElement;
+  const observer = new MutationObserver(onStoreChange);
+  observer.observe(root, { attributes: true, attributeFilter: ["class"] });
+
+  const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  const handleSystemChange = (event: MediaQueryListEvent) => {
+    try {
+      if (localStorage.getItem("theme")) return;
+    } catch {
+      // Ignore storage errors
+    }
+    root.classList.toggle("dark", event.matches);
+    onStoreChange();
+  };
+
+  mediaQuery.addEventListener("change", handleSystemChange);
+  return () => {
+    observer.disconnect();
+    mediaQuery.removeEventListener("change", handleSystemChange);
+  };
+}
+
+function getSnapshot(): boolean {
+  return document.documentElement.classList.contains("dark");
+}
+
+function getServerSnapshot(): boolean | null {
+  return null;
+}
+
 export function ThemeToggle({ className = "" }: ThemeToggleProps) {
-  const [mounted, setMounted] = useState(false);
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    setIsDark(root.classList.contains("dark"));
-    setMounted(true);
-
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleSystemChange = (event: MediaQueryListEvent) => {
-      try {
-        if (localStorage.getItem("theme")) return;
-      } catch {
-        // Ignore storage errors
-      }
-      root.classList.toggle("dark", event.matches);
-      setIsDark(event.matches);
-    };
-
-    mediaQuery.addEventListener("change", handleSystemChange);
-    return () => mediaQuery.removeEventListener("change", handleSystemChange);
-  }, []);
+  const isDark = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const toggleTheme = () => {
     const root = document.documentElement;
@@ -40,14 +50,14 @@ export function ThemeToggle({ className = "" }: ThemeToggleProps) {
     } catch {
       // Ignore storage errors
     }
-    setIsDark(nextIsDark);
   };
 
-  const label = mounted
-    ? isDark
-      ? "Ativar modo claro"
-      : "Ativar modo escuro"
-    : "Alternar tema";
+  const label =
+    isDark === null
+      ? "Alternar tema"
+      : isDark
+        ? "Ativar modo claro"
+        : "Ativar modo escuro";
 
   return (
     <button

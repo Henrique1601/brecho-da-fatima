@@ -7,6 +7,7 @@ import { HeroBanner } from "@/components/HeroBanner";
 import { StoriesBar } from "@/components/StoriesBar";
 import { ProductCard } from "@/components/ProductCard";
 import { SidebarFilter } from "@/components/SidebarFilter";
+import { AdminStatsBar } from "@/components/AdminStatsBar";
 import { AddProductModal } from "@/components/AddProductModal";
 import { BufferShareModal } from "@/components/BufferShareModal";
 import { ProductDetailModal } from "@/components/ProductDetailModal";
@@ -15,11 +16,18 @@ import { FavoritesModal } from "@/components/FavoritesModal";
 import { AdminPinModal } from "@/components/AdminPinModal";
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
 import { Footer } from "@/components/Footer";
-import { INITIAL_PRODUCTS, STORE_DATA } from "@/data/storeData";
+import { INITIAL_PRODUCTS } from "@/data/storeData";
+import {
+  fetchProducts,
+  saveProduct,
+  updateProductStatus,
+  removeProduct,
+  uploadProductImage,
+} from "@/lib/productRepository";
 import { Product } from "@/types";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { BackupModal } from "@/components/BackupModal";
-import { Sparkles, Search, SlidersHorizontal, Heart, ShieldAlert, Check, Mic, MicOff } from "lucide-react";
+import { Search, SlidersHorizontal, Mic } from "lucide-react";
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
@@ -42,34 +50,68 @@ export default function Home() {
 
   // Modais
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [isFavoritesModalOpen, setIsFavoritesModalOpen] = useState(false);
   const [bufferProduct, setBufferProduct] = useState<Product | null>(null);
   const [detailProduct, setDetailProduct] = useState<Product | null>(null);
 
-  // Carregar do localStorage
+  // Carregar dados iniciais (Supabase / localStorage) e deep-link ?peca=<id>
   useEffect(() => {
-    try {
-      const savedProds = localStorage.getItem("brecho_fatima_products");
-      if (savedProds) setProducts(JSON.parse(savedProds));
+    let active = true;
 
-      const savedFavs = localStorage.getItem("brecho_fatima_favorites");
-      if (savedFavs) setFavorites(JSON.parse(savedFavs));
+    const loadInitialData = async () => {
+      try {
+        const loadedProducts = await fetchProducts(INITIAL_PRODUCTS);
+        if (!active) return;
+        setProducts(loadedProducts);
 
-      const savedAdmin = localStorage.getItem("brecho_fatima_admin");
-      if (savedAdmin === "true") setIsAdminUnlocked(true);
-    } catch (e) {
-      console.error("Erro ao carregar dados locais", e);
-    }
+        const params = new URLSearchParams(window.location.search);
+        const pecaId = params.get("peca");
+        if (pecaId) {
+          const target = loadedProducts.find((p) => p.id === pecaId);
+          if (target) {
+            setDetailProduct(target);
+          }
+        }
+
+        const savedFavs = localStorage.getItem("brecho_fatima_favorites");
+        if (savedFavs) setFavorites(JSON.parse(savedFavs));
+
+        const savedAdmin = localStorage.getItem("brecho_fatima_admin");
+        if (savedAdmin === "true") setIsAdminUnlocked(true);
+      } catch (e) {
+        console.error("Erro ao carregar dados iniciais", e);
+      }
+    };
+
+    void loadInitialData();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const saveProducts = (newProds: Product[]) => {
-    setProducts(newProds);
+  const handleExitAdmin = () => {
+    setIsAdminUnlocked(false);
     try {
-      localStorage.setItem("brecho_fatima_products", JSON.stringify(newProds));
+      localStorage.removeItem("brecho_fatima_admin");
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const persistProductWithImages = async (product: Product): Promise<Product> => {
+    const uploadedImages = await Promise.all(
+      (product.images ?? []).map((img) =>
+        img.startsWith("data:image/") ? uploadProductImage(img) : Promise.resolve(img)
+      )
+    );
+
+    return saveProduct({
+      ...product,
+      images: uploadedImages,
+    });
   };
 
   const saveFavorites = (newFavs: Product[]) => {
@@ -97,7 +139,7 @@ export default function Home() {
           origin: { y: 0.8 },
           colors: ['#f43f5e', '#fb7185', '#fda4af']
         });
-      } catch (e) {}
+      } catch {}
     }
     saveFavorites(updated);
   };
@@ -112,28 +154,30 @@ export default function Home() {
     executeToggleSold(id);
   };
 
-  const executeToggleSold = (id: string) => {
-    const updated = products.map((p) => {
-      if (p.id === id) {
-        return {
-          ...p,
-          status: (p.status === "available" ? "sold" : "available") as 'available' | 'sold'
-        };
-      }
-      return p;
-    });
-    saveProducts(updated);
+  const executeToggleSold = async (id: string) => {
+    const target = products.find((p) => p.id === id);
+    if (!target) return;
+    const nextStatus: Product["status"] =
+      target.status === "available" ? "sold" : "available";
+
+    setProducts((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, status: nextStatus } : p))
+    );
 
     if (detailProduct && detailProduct.id === id) {
-      setDetailProduct((prev) => prev ? {
-        ...prev,
-        status: (prev.status === "available" ? "sold" : "available") as 'available' | 'sold'
-      } : null);
+      setDetailProduct((prev) => (prev ? { ...prev, status: nextStatus } : null));
+    }
+
+    try {
+      await updateProductStatus(id, nextStatus);
+    } catch (e) {
+      console.error("Erro ao atualizar status da peça:", e);
     }
   };
 
   // Abertura do Modal de Adicionar Peça com checagem de PIN
   const handleOpenAddModal = () => {
+    setEditingProduct(null);
     if (!isAdminUnlocked) {
       setPinActionCallback(() => () => setIsAddModalOpen(true));
       setIsPinModalOpen(true);
@@ -143,16 +187,57 @@ export default function Home() {
   };
 
   // Adicionar novo produto
-  const handleAddProduct = (newProduct: Product) => {
-    const updated = [newProduct, ...products];
-    saveProducts(updated);
+  const handleAddProduct = async (newProduct: Product) => {
     try {
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
-    } catch (e) {}
+      const saved = await persistProductWithImages(newProduct);
+      setProducts((prev) => [saved, ...prev.filter((p) => p.id !== saved.id)]);
+      try {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+        });
+      } catch {}
+    } catch (e) {
+      console.error("Erro ao adicionar peça:", e);
+    }
+  };
+
+  // Atualizar produto existente
+  const handleUpdateProduct = async (updatedProduct: Product) => {
+    try {
+      const saved = await persistProductWithImages(updatedProduct);
+      setProducts((prev) => prev.map((p) => (p.id === saved.id ? saved : p)));
+      setDetailProduct((prev) => (prev && prev.id === saved.id ? saved : prev));
+    } catch (e) {
+      console.error("Erro ao atualizar peça:", e);
+    }
+  };
+
+  // Excluir produto
+  const handleDeleteProduct = async (id: string) => {
+    if (!window.confirm("Tem certeza que deseja excluir esta peça?")) return;
+
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+    setDetailProduct((prev) => (prev && prev.id === id ? null : prev));
+
+    try {
+      await removeProduct(id);
+    } catch (e) {
+      console.error("Erro ao excluir peça:", e);
+    }
+  };
+
+  // Restaurar backup
+  const handleRestoreProducts = async (restored: Product[]) => {
+    setProducts(restored);
+    try {
+      for (const item of restored) {
+        await saveProduct(item);
+      }
+    } catch (e) {
+      console.error("Erro ao restaurar peças:", e);
+    }
   };
 
   // Filtros combinados
@@ -179,7 +264,7 @@ export default function Home() {
         if (priceSort === "desc") return b.price - a.price;
         return 0;
       });
-  }, [products, selectedCategory, selectedSize, statusFilter, priceSort, maxPrice, searchQuery]);
+  }, [products, selectedCategory, selectedSize, statusFilter, priceSort, maxPrice, maxPriceSlider, searchQuery]);
 
   const counts = useMemo(() => {
     const total = products.length;
@@ -206,7 +291,25 @@ export default function Home() {
   // Busca por Voz nativa Web Speech API
   const handleVoiceSearch = () => {
     if (typeof window === "undefined") return;
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    interface SpeechRecognitionEventLike {
+      results: ArrayLike<ArrayLike<{ transcript: string }>>;
+    }
+    interface SpeechRecognitionLike {
+      lang: string;
+      continuous: boolean;
+      interimResults: boolean;
+      onstart: (() => void) | null;
+      onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+      onerror: (() => void) | null;
+      onend: (() => void) | null;
+      start: () => void;
+    }
+    type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+    const win = window as unknown as {
+      SpeechRecognition?: SpeechRecognitionConstructor;
+      webkitSpeechRecognition?: SpeechRecognitionConstructor;
+    };
+    const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("Seu navegador não suporta busca por voz. Experimente no Google Chrome.");
       return;
@@ -221,7 +324,7 @@ export default function Home() {
       setIsListeningVoice(true);
     };
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionEventLike) => {
       const transcript = event.results[0][0].transcript;
       setSearchQuery(transcript);
       setIsListeningVoice(false);
@@ -252,8 +355,7 @@ export default function Home() {
         onOpenBackup={() => setIsBackupModalOpen(true)}
         onToggleAdmin={() => {
           if (isAdminUnlocked) {
-            setIsAdminUnlocked(false);
-            localStorage.removeItem("brecho_fatima_admin");
+            handleExitAdmin();
           } else {
             setIsPinModalOpen(true);
           }
@@ -338,6 +440,13 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Barra de Estatísticas Admin */}
+        {isAdminUnlocked && (
+          <div className="mb-8">
+            <AdminStatsBar products={products} onExitAdmin={handleExitAdmin} />
+          </div>
+        )}
+
         {/* Layout com Sidebar + Grid de Produtos */}
         <div className="flex flex-col lg:flex-row items-start gap-8">
           
@@ -385,6 +494,12 @@ export default function Home() {
                     onSelectProduct={(p) => setDetailProduct(p)}
                     isFavorite={favorites.some((f) => f.id === product.id)}
                     onToggleFavorite={handleToggleFavorite}
+                    isAdminUnlocked={isAdminUnlocked}
+                    onEditProduct={(p) => {
+                      setEditingProduct(p);
+                      setIsAddModalOpen(true);
+                    }}
+                    onDeleteProduct={handleDeleteProduct}
                   />
                 ))}
               </div>
@@ -404,8 +519,13 @@ export default function Home() {
       {/* Modais */}
       <AddProductModal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditingProduct(null);
+        }}
         onAddProduct={handleAddProduct}
+        editingProduct={editingProduct}
+        onUpdateProduct={handleUpdateProduct}
       />
 
       <BufferShareModal
@@ -446,7 +566,7 @@ export default function Home() {
         isOpen={isBackupModalOpen}
         onClose={() => setIsBackupModalOpen(false)}
         products={products}
-        onRestoreProducts={(restored) => saveProducts(restored)}
+        onRestoreProducts={handleRestoreProducts}
       />
 
       <AdminPinModal
@@ -456,7 +576,7 @@ export default function Home() {
           setIsAdminUnlocked(true);
           try {
             localStorage.setItem("brecho_fatima_admin", "true");
-          } catch (e) {}
+          } catch {}
           if (pinActionCallback) {
             pinActionCallback();
             setPinActionCallback(null);

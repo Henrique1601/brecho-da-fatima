@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+import {
+  motion,
+  useMotionTemplate,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+  useTransform,
+} from "framer-motion";
 import { 
   CheckCircle2, 
   Sparkles, 
@@ -9,7 +16,9 @@ import {
   RotateCw, 
   Heart, 
   Eye, 
-  Share2 
+  Share2,
+  Pencil,
+  Trash2
 } from "lucide-react";
 import { Product } from "@/types";
 import { STORE_DATA } from "@/data/storeData";
@@ -22,6 +31,9 @@ interface ProductCardProps {
   onSelectProduct: (product: Product) => void;
   isFavorite: boolean;
   onToggleFavorite: (product: Product) => void;
+  isAdminUnlocked?: boolean;
+  onEditProduct?: (product: Product) => void;
+  onDeleteProduct?: (id: string) => void;
 }
 
 export function ProductCard({
@@ -30,26 +42,71 @@ export function ProductCard({
   onOpenBufferShare,
   onSelectProduct,
   isFavorite,
-  onToggleFavorite
+  onToggleFavorite,
+  isAdminUnlocked = false,
+  onEditProduct,
+  onDeleteProduct,
 }: ProductCardProps) {
   const isSold = product.status === "sold";
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
+
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const springConfig = { stiffness: 260, damping: 24, mass: 0.5 };
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [7, -7]), springConfig);
+  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-7, 7]), springConfig);
+  const glareX = useSpring(useTransform(mouseX, [-0.5, 0.5], [0, 100]), springConfig);
+  const glareY = useSpring(useTransform(mouseY, [-0.5, 0.5], [0, 100]), springConfig);
+  const glareBackground = useMotionTemplate`radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.06) 35%, transparent 70%)`;
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (shouldReduceMotion || isSold) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    mouseX.set((e.clientX - rect.left) / rect.width - 0.5);
+    mouseY.set((e.clientY - rect.top) / rect.height - 0.5);
+  };
+
+  const handleMouseLeave = () => {
+    mouseX.set(0);
+    mouseY.set(0);
+  };
 
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
+      layout={!shouldReduceMotion}
+      initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      whileHover={{ y: -6 }}
+      exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.95 }}
+      whileHover={shouldReduceMotion ? undefined : { y: -6 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={
+        shouldReduceMotion
+          ? undefined
+          : {
+              transformPerspective: 1000,
+              rotateX,
+              rotateY,
+            }
+      }
       className={`group relative flex flex-col rounded-3xl overflow-hidden bg-white dark:bg-zinc-900 border transition-all duration-300 ${
         isSold 
           ? "border-zinc-200 dark:border-zinc-800 opacity-75" 
           : "border-zinc-200/90 dark:border-zinc-800/90 hover:shadow-2xl hover:shadow-rose-500/10 hover:border-rose-300 dark:hover:border-rose-900/60"
       }`}
     >
+      {/* Subtle 3D specular glare overlay */}
+      {!shouldReduceMotion && !isSold && (
+        <motion.div
+          aria-hidden="true"
+          style={{ background: glareBackground }}
+          className="pointer-events-none absolute inset-0 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        />
+      )}
       {/* Imagem com Efeito 3D Tilt / Hover Zoom */}
       <div 
         role="button"
@@ -256,6 +313,32 @@ export function ProductCard({
               <span>Buffer / Insta</span>
             </button>
           </div>
+
+          {isAdminUnlocked && (
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => onEditProduct?.(product)}
+                aria-label={`Editar peça ${product.title}`}
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-xl text-xs font-semibold bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                title="Editar peça"
+              >
+                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Editar</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onDeleteProduct?.(product.id)}
+                aria-label={`Excluir peça ${product.title}`}
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-xl text-xs font-semibold bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                title="Excluir peça"
+              >
+                <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Excluir</span>
+              </button>
+            </div>
+          )}
         </div>
 
       </div>

@@ -15,6 +15,7 @@ import {
   DownloadCloud
 } from "lucide-react";
 import { InstagramIcon as Instagram } from "@/components/icons/InstagramIcon";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { STORE_DATA } from "@/data/storeData";
 import { createWhatsAppLink } from "@/lib/utils";
 
@@ -132,6 +133,8 @@ export function Navbar({
               <Phone className="w-4 h-4" />
               <span>{STORE_DATA.whatsappFormatted}</span>
             </a>
+
+            <ThemeToggle />
           </nav>
 
           {/* Mobile hamburger */}
@@ -167,6 +170,7 @@ export function Navbar({
             >
               <PlusCircle className="w-6 h-6" />
             </button>
+            <ThemeToggle />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-xl"

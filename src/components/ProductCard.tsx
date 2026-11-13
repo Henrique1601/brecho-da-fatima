@@ -6,11 +6,9 @@ import {
   CheckCircle2, 
   Sparkles, 
   MessageCircle, 
-  ExternalLink, 
   RotateCw, 
   Heart, 
   Eye, 
-  Tag, 
   Share2 
 } from "lucide-react";
 import { Product } from "@/types";
@@ -54,21 +52,32 @@ export function ProductCard({
     >
       {/* Imagem com Efeito 3D Tilt / Hover Zoom */}
       <div 
-        className="relative aspect-[4/5] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 cursor-pointer"
+        role="button"
+        tabIndex={0}
+        aria-label={`Ver detalhes de ${product.title}`}
+        className="relative aspect-[4/5] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-inset"
         onClick={() => onSelectProduct(product)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSelectProduct(product);
+          }
+        }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         <img
           src={product.images[currentImgIndex] || product.images[0] || "https://images.unsplash.com/photo-1544441893-675973e31985?w=600"}
-          alt={product.title}
+          alt={product.title ? `${product.title} — Tamanho ${product.size}` : "Peça do Brechó da Fátima"}
+          loading="lazy"
+          decoding="async"
           className={`w-full h-full object-cover transition-transform duration-700 ease-out ${
             isHovered && !isSold ? "scale-108" : "scale-100"
           } ${isSold ? "grayscale contrast-75" : ""}`}
         />
 
         {/* Gradiente sutil para legibilidade */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 opacity-60 group-hover:opacity-80 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 opacity-60 group-hover:opacity-80 transition-opacity" aria-hidden="true" />
 
         {/* Badge VENDIDA ou DISPONÍVEL */}
         <div className="absolute top-3 left-3 z-10 flex flex-wrap gap-1.5 items-center">
@@ -83,7 +92,7 @@ export function ProductCard({
               </span>
               {product.highlight && (
                 <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/95 text-white flex items-center gap-1 shadow-md">
-                  <Sparkles className="w-3 h-3" /> Garimpo
+                  <Sparkles className="w-3 h-3" aria-hidden="true" /> Garimpo
                 </span>
               )}
             </>
@@ -93,18 +102,21 @@ export function ProductCard({
         {/* Badge de Tamanho & Botão de Favoritar */}
         <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               onToggleFavorite(product);
             }}
-            className={`p-2 rounded-full backdrop-blur-md transition-all shadow-md ${
+            aria-label={isFavorite ? `Remover ${product.title} dos favoritos` : `Salvar ${product.title} nos favoritos`}
+            aria-pressed={isFavorite}
+            className={`p-2 rounded-full backdrop-blur-md transition-all shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 ${
               isFavorite
                 ? "bg-rose-600 text-white scale-110"
                 : "bg-white/80 dark:bg-zinc-900/80 text-zinc-700 dark:text-zinc-200 hover:text-rose-500 hover:scale-105"
             }`}
             title={isFavorite ? "Remover dos favoritos" : "Salvar nos favoritos"}
           >
-            <Heart className={`w-4 h-4 ${isFavorite ? "fill-white" : ""}`} />
+            <Heart className={`w-4 h-4 ${isFavorite ? "fill-white" : ""}`} aria-hidden="true" />
           </button>
           <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md text-zinc-900 dark:text-zinc-100 border border-black/10 shadow-sm">
             Tam: {product.size}
@@ -120,18 +132,20 @@ export function ProductCard({
             {product.images.map((_, i) => (
               <button
                 key={i}
+                type="button"
                 onClick={() => setCurrentImgIndex(i)}
-                className={`w-2 h-2 rounded-full transition-all ${
+                className={`w-2 h-2 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
                   i === currentImgIndex ? "bg-white w-4" : "bg-white/40 hover:bg-white/70"
                 }`}
-                aria-label={`Foto ${i + 1}`}
+                aria-label={`Ver foto ${i + 1} de ${product.images.length}`}
+                aria-current={i === currentImgIndex ? "true" : undefined}
               />
             ))}
           </div>
         )}
 
         {/* Botão de visualização rápida em hover */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" aria-hidden="true">
           <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md text-xs font-bold text-zinc-900 dark:text-white shadow-xl">
             <Eye className="w-3.5 h-3.5" /> Ver Detalhes
           </span>
@@ -148,11 +162,14 @@ export function ProductCard({
             <span>{product.condition}</span>
           </div>
 
-          <h3 
-            onClick={() => onSelectProduct(product)}
-            className="font-serif text-base font-bold text-zinc-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-400 line-clamp-1 cursor-pointer transition-colors"
-          >
-            {product.title}
+          <h3 className="font-serif text-base font-bold text-zinc-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
+            <button
+              type="button"
+              onClick={() => onSelectProduct(product)}
+              className="text-left line-clamp-1 w-full cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+            >
+              {product.title}
+            </button>
           </h3>
 
           <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2 mt-1">
@@ -189,9 +206,10 @@ export function ProductCard({
               href={createWhatsAppLink(STORE_DATA.whatsapp, product.title, product.price)}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md shadow-emerald-600/20 active:scale-98 transition-all"
+              aria-label={`Comprar ${product.title} pelo WhatsApp`}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md shadow-emerald-600/20 active:scale-98 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2"
             >
-              <MessageCircle className="w-4 h-4" />
+              <MessageCircle className="w-4 h-4" aria-hidden="true" />
               <span>Quero Comprar no WhatsApp</span>
             </a>
           ) : (
@@ -203,8 +221,11 @@ export function ProductCard({
           {/* Botões Administrativos do Brechó: Alternar Vendido e Buffer */}
           <div className="flex items-center gap-2 pt-1">
             <button
+              type="button"
               onClick={() => onToggleSold(product.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-xl text-xs font-semibold border transition-all ${
+              aria-pressed={isSold}
+              aria-label={isSold ? `Reativar peça ${product.title}` : `Marcar ${product.title} como vendida`}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-xl text-xs font-semibold border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 ${
                 isSold
                   ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100"
                   : "bg-zinc-50 dark:bg-zinc-800/60 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100"
@@ -213,23 +234,25 @@ export function ProductCard({
             >
               {isSold ? (
                 <>
-                  <RotateCw className="w-3.5 h-3.5" />
+                  <RotateCw className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>Reativar Peça</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-zinc-400" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-zinc-400" aria-hidden="true" />
                   <span>Marcar Vendida</span>
                 </>
               )}
             </button>
 
             <button
+              type="button"
               onClick={() => onOpenBufferShare(product)}
-              className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl text-xs font-semibold bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors"
+              aria-label={`Compartilhar ${product.title} no Instagram via Buffer`}
+              className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl text-xs font-semibold bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
               title="Postar ou Agendar no Instagram via Buffer"
             >
-              <Share2 className="w-3.5 h-3.5" />
+              <Share2 className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Buffer / Insta</span>
             </button>
           </div>

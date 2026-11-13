@@ -2,9 +2,7 @@
 
 import React from "react";
 import { 
-  Heart, 
   Phone, 
-  MapPin, 
   Sparkles, 
   ShieldCheck, 
   Recycle, 
@@ -75,17 +73,19 @@ export function Footer({ onOpenLocation }: FooterProps) {
                 href={STORE_DATA.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2.5 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-pink-600 hover:scale-110 transition-transform shadow-sm"
+                aria-label="Instagram do Brechó da Fátima"
+                className="p-2.5 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-pink-600 hover:scale-110 transition-transform shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
               >
-                <Instagram className="w-5 h-5" />
+                <Instagram className="w-5 h-5" aria-hidden="true" />
               </a>
               <a
                 href={createWhatsAppLink(STORE_DATA.whatsapp)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2.5 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-emerald-600 hover:scale-110 transition-transform shadow-sm"
+                aria-label="WhatsApp do Brechó da Fátima"
+                className="p-2.5 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-emerald-600 hover:scale-110 transition-transform shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
               >
-                <Phone className="w-5 h-5" />
+                <Phone className="w-5 h-5" aria-hidden="true" />
               </a>
             </div>
           </div>
@@ -105,8 +105,9 @@ export function Footer({ onOpenLocation }: FooterProps) {
               {STORE_DATA.address.street} - {STORE_DATA.address.city}/{STORE_DATA.address.state}
             </p>
             <button
+              type="button"
               onClick={onOpenLocation}
-              className="text-xs font-bold text-rose-600 hover:text-rose-500 underline"
+              className="text-xs font-bold text-rose-600 hover:text-rose-500 underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
             >
               Ver mapa e rotas &rarr;
             </button>
@@ -120,11 +121,13 @@ export function Footer({ onOpenLocation }: FooterProps) {
             © Brechó da Fátima • Todos os direitos reservados.
           </p>
           <button
+            type="button"
             onClick={scrollToTop}
-            className="flex items-center gap-1.5 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+            aria-label="Voltar ao topo da página"
+            className="flex items-center gap-1.5 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors rounded-md px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
           >
             <span>Voltar ao topo</span>
-            <ArrowUp className="w-3.5 h-3.5" />
+            <ArrowUp className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
         </div>
 

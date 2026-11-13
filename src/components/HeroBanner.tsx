@@ -54,7 +54,11 @@ export function HeroBanner({ onScrollToProducts, onOpenLocation }: HeroBannerPro
   const slide = SLIDES[current];
 
   return (
-    <div className="relative w-full h-[520px] sm:h-[580px] lg:h-[620px] overflow-hidden bg-zinc-950 text-white select-none">
+    <section
+      aria-label="Destaques do Brechó da Fátima"
+      aria-roledescription="carousel"
+      className="relative w-full h-[520px] sm:h-[580px] lg:h-[620px] overflow-hidden bg-zinc-950 text-white select-none"
+    >
       <AnimatePresence mode="wait">
         <motion.div
           key={current}
@@ -63,6 +67,7 @@ export function HeroBanner({ onScrollToProducts, onOpenLocation }: HeroBannerPro
           exit={{ opacity: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="absolute inset-0"
+          aria-hidden="true"
         >
           {/* Background image com overlay cinematográfico */}
           <div
@@ -85,7 +90,7 @@ export function HeroBanner({ onScrollToProducts, onOpenLocation }: HeroBannerPro
             transition={{ delay: 0.2, duration: 0.5 }}
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs sm:text-sm font-medium text-amber-300"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
             <span>{slide.badge}</span>
           </motion.div>
 
@@ -117,25 +122,27 @@ export function HeroBanner({ onScrollToProducts, onOpenLocation }: HeroBannerPro
             className="flex flex-wrap items-center gap-4 pt-2"
           >
             <button
+              type="button"
               onClick={current === 2 ? onOpenLocation : onScrollToProducts}
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-rose-600 hover:bg-rose-500 font-semibold text-sm sm:text-base text-white shadow-lg shadow-rose-600/30 transition-transform active:scale-95"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-rose-600 hover:bg-rose-500 font-semibold text-sm sm:text-base text-white shadow-lg shadow-rose-600/30 transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
             >
               <span>{slide.cta}</span>
-              <ArrowUpRight className="w-4 h-4" />
+              <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
             </button>
 
             <a
               href={createWhatsAppLink(STORE_DATA.whatsapp)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-3.5 rounded-full bg-emerald-600/90 hover:bg-emerald-600 backdrop-blur-md border border-white/20 text-sm sm:text-base font-semibold text-white transition-all hover:border-emerald-400"
+              aria-label="Chamar Dona Fátima no WhatsApp"
+              className="inline-flex items-center gap-2 px-5 py-3.5 rounded-full bg-emerald-600/90 hover:bg-emerald-600 backdrop-blur-md border border-white/20 text-sm sm:text-base font-semibold text-white transition-all hover:border-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
             >
               <span>Chamar Dona Fátima</span>
             </a>
           </motion.div>
 
           <div className="pt-2 text-xs text-zinc-400 flex items-center gap-2">
-            <Tag className="w-3.5 h-3.5 text-rose-400" />
+            <Tag className="w-3.5 h-3.5 text-rose-400" aria-hidden="true" />
             <span>{slide.tagline}</span>
           </div>
 
@@ -145,18 +152,20 @@ export function HeroBanner({ onScrollToProducts, onOpenLocation }: HeroBannerPro
       {/* Controles de navegação do carrossel */}
       <div className="absolute bottom-6 right-6 z-20 flex items-center gap-2">
         <button
+          type="button"
           onClick={() => setCurrent((prev) => (prev - 1 + SLIDES.length) % SLIDES.length)}
-          className="p-2.5 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white border border-white/10 transition-colors"
+          className="p-2.5 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white border border-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           aria-label="Slide anterior"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-5 h-5" aria-hidden="true" />
         </button>
         <button
+          type="button"
           onClick={() => setCurrent((prev) => (prev + 1) % SLIDES.length)}
-          className="p-2.5 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white border border-white/10 transition-colors"
+          className="p-2.5 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white border border-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           aria-label="Próximo slide"
         >
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="w-5 h-5" aria-hidden="true" />
         </button>
       </div>
 
@@ -165,14 +174,16 @@ export function HeroBanner({ onScrollToProducts, onOpenLocation }: HeroBannerPro
         {SLIDES.map((_, idx) => (
           <button
             key={idx}
+            type="button"
             onClick={() => setCurrent(idx)}
-            className={`h-1.5 rounded-full transition-all duration-300 ${
+            className={`h-1.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${
               idx === current ? "w-8 bg-rose-500" : "w-2 bg-white/30 hover:bg-white/60"
             }`}
             aria-label={`Ir para slide ${idx + 1}`}
+            aria-current={idx === current ? "true" : undefined}
           />
         ))}
       </div>
-    </div>
+    </section>
   );
 }

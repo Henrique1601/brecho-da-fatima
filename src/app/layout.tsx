@@ -28,7 +28,16 @@ export const metadata: Metadata = {
     title: "Brechó da Fátima | Garimpos e Moda Circular em Santos",
     description: "Peças selecionadas a dedo por Dona Fátima. Marque sua peça favorita e chame direto no WhatsApp (13) 97404-7020.",
     images: ["https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=1200"],
-  }
+  },
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Brechó da Fátima",
+    statusBarStyle: "default",
+  },
 };
 
 export default function RootLayout({

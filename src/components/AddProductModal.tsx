@@ -1,19 +1,13 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { 
   X, 
   UploadCloud, 
   Sparkles, 
-  Image as ImageIcon, 
   Trash2, 
-  Send, 
   Check, 
-  DollarSign, 
-  Tag, 
-  Layers, 
-  Info,
   Loader2
 } from "lucide-react";
 import { InstagramIcon as Instagram } from "@/components/icons/InstagramIcon";
@@ -23,32 +17,88 @@ interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddProduct: (product: Product) => void;
+  editingProduct?: Product | null;
+  onUpdateProduct?: (product: Product) => void;
 }
 
-export function AddProductModal({ isOpen, onClose, onAddProduct }: AddProductModalProps) {
-  const [images, setImages] = useState<string[]>([]);
-  const [title, setTitle] = useState("");
-  const [price, setPrice] = useState("");
-  const [originalPrice, setOriginalPrice] = useState("");
-  const [category, setCategory] = useState<Product['category']>("feminino");
-  const [size, setSize] = useState("M");
-  const [condition, setCondition] = useState<Product['condition']>("Excelente estado (Como Novo)");
-  const [brand, setBrand] = useState("");
-  const [color, setColor] = useState("");
-  const [description, setDescription] = useState("");
-  const [postToBuffer, setPostToBuffer] = useState(true);
-  
+const VALID_CATEGORIES = new Set<Product["category"]>([
+  "feminino",
+  "masculino",
+  "calcados",
+  "acessorios",
+  "vintage",
+  "infantil",
+]);
+
+const VALID_CONDITIONS = new Set<Product["condition"]>([
+  "Novo com Etiqueta",
+  "Excelente estado (Como Novo)",
+  "Ótimo estado",
+  "Bom estado vintage",
+]);
+
+export function AddProductModal({
+  isOpen,
+  onClose,
+  onAddProduct,
+  editingProduct = null,
+  onUpdateProduct,
+}: AddProductModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <AddProductModalContent
+      key={editingProduct?.id ?? "new"}
+      onClose={onClose}
+      onAddProduct={onAddProduct}
+      editingProduct={editingProduct}
+      onUpdateProduct={onUpdateProduct}
+    />
+  );
+}
+
+function AddProductModalContent({
+  onClose,
+  onAddProduct,
+  editingProduct = null,
+  onUpdateProduct,
+}: Omit<AddProductModalProps, "isOpen">) {
+  const isEditing = Boolean(editingProduct);
+
+  const [images, setImages] = useState<string[]>(() => editingProduct?.images ?? []);
+  const [title, setTitle] = useState(() => editingProduct?.title ?? "");
+  const [price, setPrice] = useState(() =>
+    editingProduct?.price !== undefined ? String(editingProduct.price) : ""
+  );
+  const [originalPrice, setOriginalPrice] = useState(() =>
+    editingProduct?.originalPrice !== undefined ? String(editingProduct.originalPrice) : ""
+  );
+  const [category, setCategory] = useState<Product["category"]>(
+    () => editingProduct?.category ?? "feminino"
+  );
+  const [size, setSize] = useState(() => editingProduct?.size ?? "M");
+  const [condition, setCondition] = useState<Product["condition"]>(
+    () => editingProduct?.condition ?? "Excelente estado (Como Novo)"
+  );
+  const [brand, setBrand] = useState(() => editingProduct?.brand ?? "");
+  const [color, setColor] = useState(() => editingProduct?.color ?? "");
+  const [description, setDescription] = useState(() => editingProduct?.description ?? "");
+  const [postToBuffer, setPostToBuffer] = useState(() => !editingProduct);
+  const [touchedSelects, setTouchedSelects] = useState<{ category: boolean; condition: boolean }>(
+    () => ({
+      category: Boolean(editingProduct),
+      condition: Boolean(editingProduct),
+    })
+  );
+
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [aiSuccess, setAiSuccess] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  if (!isOpen) return null;
-
   // Lidar com arquivos selecionados ou arrastados (Drag and Drop)
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
-    const newImageUrls: string[] = [];
 
     Array.from(files).forEach((file) => {
       if (file.type.startsWith("image/")) {
@@ -84,23 +134,44 @@ export function AddProductModal({ isOpen, onClose, onAddProduct }: AddProductMod
     setAiSuccess(false);
 
     try {
+      const firstImage = images[0]?.startsWith("data:image/") ? images[0] : undefined;
       const res = await fetch("/api/ai-generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: title || "Peça Vintage Garimpo",
+          title: title.trim() || undefined,
           price: Number(price) || 0,
           category,
           condition,
-          brand,
-          color,
-          hasImages: images.length > 0
-        })
+          brand: brand.trim() || undefined,
+          color: color.trim() || undefined,
+          image: firstImage,
+        }),
       });
 
       const data = await res.json();
       if (data.success && data.description) {
         setDescription(data.description);
+        if (typeof data.title === "string" && data.title.trim() && !title.trim()) {
+          setTitle(data.title.trim());
+        }
+        if (typeof data.color === "string" && data.color.trim() && !color.trim()) {
+          setColor(data.color.trim());
+        }
+        if (
+          typeof data.category === "string" &&
+          VALID_CATEGORIES.has(data.category as Product["category"]) &&
+          !touchedSelects.category
+        ) {
+          setCategory(data.category as Product["category"]);
+        }
+        if (
+          typeof data.condition === "string" &&
+          VALID_CONDITIONS.has(data.condition as Product["condition"]) &&
+          !touchedSelects.condition
+        ) {
+          setCondition(data.condition as Product["condition"]);
+        }
         setAiSuccess(true);
       }
     } catch (err) {
@@ -121,23 +192,34 @@ Tamanho: ${size}. Higienizada e pronta para usar! Entre em contato no WhatsApp p
       return;
     }
 
-    const newProd: Product = {
-      id: `prod-${Date.now()}`,
+    const parsedPrice = parseFloat(price.replace(",", "."));
+    const parsedOriginalPrice = originalPrice
+      ? parseFloat(originalPrice.replace(",", "."))
+      : undefined;
+
+    const productPayload: Product = {
+      id: editingProduct ? editingProduct.id : `prod-${Date.now()}`,
       title,
-      price: parseFloat(price.replace(",", ".")),
-      originalPrice: originalPrice ? parseFloat(originalPrice.replace(",", ".")) : undefined,
+      price: parsedPrice,
+      originalPrice: parsedOriginalPrice,
       category,
       size,
       condition,
       brand: brand || undefined,
       color: color || undefined,
-      description: description || `Linda peça selecionada no Brechó da Fátima em ${condition.toLowerCase()}.`,
-      status: "available",
-      images: images.length > 0 ? images : [
-        "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=900&q=80"
-      ],
-      createdAt: new Date().toISOString(),
-      highlight: true
+      description:
+        description ||
+        `Linda peça selecionada no Brechó da Fátima em ${condition.toLowerCase()}.`,
+      status: editingProduct ? editingProduct.status : "available",
+      images:
+        images.length > 0
+          ? images
+          : [
+              "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=900&q=80",
+            ],
+      createdAt: editingProduct ? editingProduct.createdAt : new Date().toISOString(),
+      tags: editingProduct?.tags,
+      highlight: editingProduct ? editingProduct.highlight : true,
     };
 
     // Se a opção de Buffer estiver marcada, envia ao endpoint
@@ -146,14 +228,18 @@ Tamanho: ${size}. Higienizada e pronta para usar! Entre em contato no WhatsApp p
         await fetch("/api/buffer-publish", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ product: newProd })
+          body: JSON.stringify({ product: productPayload }),
         });
       } catch (err) {
         console.error("Buffer sync:", err);
       }
     }
 
-    onAddProduct(newProd);
+    if (editingProduct && onUpdateProduct) {
+      onUpdateProduct(productPayload);
+    } else {
+      onAddProduct(productPayload);
+    }
     onClose();
   };
 
@@ -173,10 +259,12 @@ Tamanho: ${size}. Higienizada e pronta para usar! Entre em contato no WhatsApp p
             </div>
             <div>
               <h2 className="font-serif text-lg sm:text-xl font-bold text-zinc-900 dark:text-white">
-                Cadastrar Peça no Brechó
+                {isEditing ? "Editar Peça do Brechó" : "Cadastrar Peça no Brechó"}
               </h2>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Arraste fotos, gere textos persuasivos com IA e conecte com o Buffer
+                {isEditing
+                  ? "Atualize os detalhes, fotos ou gere uma nova descrição com IA"
+                  : "Arraste fotos, gere textos persuasivos com IA e conecte com o Buffer"}
               </p>
             </div>
           </div>
@@ -283,7 +371,10 @@ Tamanho: ${size}. Higienizada e pronta para usar! Entre em contato no WhatsApp p
               </label>
               <select
                 value={category}
-                onChange={(e) => setCategory(e.target.value as any)}
+                onChange={(e) => {
+                  setCategory(e.target.value as Product["category"]);
+                  setTouchedSelects((prev) => ({ ...prev, category: true }));
+                }}
                 className="w-full px-3.5 py-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-sm text-zinc-900 dark:text-white focus:ring-2 focus:ring-rose-500 focus:outline-none"
               >
                 <option value="feminino">Feminino</option>
@@ -314,7 +405,10 @@ Tamanho: ${size}. Higienizada e pronta para usar! Entre em contato no WhatsApp p
               </label>
               <select
                 value={condition}
-                onChange={(e) => setCondition(e.target.value as any)}
+                onChange={(e) => {
+                  setCondition(e.target.value as Product["condition"]);
+                  setTouchedSelects((prev) => ({ ...prev, condition: true }));
+                }}
                 className="w-full px-3.5 py-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-sm text-zinc-900 dark:text-white focus:ring-2 focus:ring-rose-500 focus:outline-none"
               >
                 <option value="Excelente estado (Como Novo)">Excelente estado (Como Novo)</option>
@@ -362,6 +456,12 @@ Tamanho: ${size}. Higienizada e pronta para usar! Entre em contato no WhatsApp p
                 <span className="font-bold text-sm text-zinc-900 dark:text-white">
                   Assistente IA do Brechó da Fátima
                 </span>
+                {aiSuccess && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    <Check className="w-3 h-3" />
+                    Gerado
+                  </span>
+                )}
               </div>
               <button
                 type="button"
@@ -432,7 +532,7 @@ Tamanho: ${size}. Higienizada e pronta para usar! Entre em contato no WhatsApp p
               className="px-6 py-2.5 rounded-2xl text-sm font-bold text-white bg-rose-600 hover:bg-rose-500 shadow-md shadow-rose-600/30 transition-all active:scale-95 flex items-center gap-2"
             >
               <Check className="w-4 h-4" />
-              <span>Publicar Peça no Marketplace</span>
+              <span>{isEditing ? "Salvar Alterações" : "Publicar Peça no Marketplace"}</span>
             </button>
           </div>
 

@@ -113,7 +113,7 @@ export function TestimonialsSection() {
 
               {/* Texto do depoimento */}
               <p className="font-serif text-base sm:text-lg text-zinc-800 dark:text-zinc-200 leading-relaxed italic mb-6">
-                "{t.comment}"
+                &ldquo;{t.comment}&rdquo;
               </p>
 
               {/* Perfil da Cliente */}

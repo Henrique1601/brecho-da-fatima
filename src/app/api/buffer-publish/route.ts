@@ -62,10 +62,10 @@ export async function POST(req: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({
       success: false,
-      error: error?.message || "Erro ao conectar com Buffer"
+      error: error instanceof Error ? error.message : "Erro ao conectar com Buffer"
     }, { status: 500 });
   }
 }
